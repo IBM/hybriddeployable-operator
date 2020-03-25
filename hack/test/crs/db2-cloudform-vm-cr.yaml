@@ -1,0 +1,4 @@
+apiVersion: cloudform.ibm.com/v1alpha1
+kind: VirtualMachine
+metadata:
+  name: db2

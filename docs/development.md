@@ -1,9 +1,20 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Development Guide](#development-guide)
+    - [Prerequisite](#prerequisite)
+    - [Developer quick start](#developer-quick-start)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Development Guide
 
 ## Prerequisite
 
 - git
-- go version v1.12+
+- go version v1.13+
+- operator-sdk v0.15.0+
 - Linting Tools
 
     | linting tool | version |

@@ -1,0 +1,21 @@
+apiVersion: app.ibm.com/v1alpha1
+kind: Deployable
+metadata:
+  labels:
+    app.ibm.com/output-of: db2
+  generateName: db2-endpoints-
+  annotations:
+    app.ibm.com/output-of: default/db2
+  namespace: toronto
+spec:
+  template:
+    apiVersion: v1
+    kind: Endpoints
+    metadata:
+      name: db2-endpoints
+    subsets:
+    - addresses:
+      - ip: 10.10.10.10
+      ports:
+      - port: 10101
+        protocol: TCP

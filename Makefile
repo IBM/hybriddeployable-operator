@@ -22,7 +22,7 @@ BUILD_LOCALLY ?= 1
 # Use your own docker registry and image name for dev/test by overridding the
 # IMAGE_REPO, IMAGE_NAME and RELEASE_TAG environment variable.
 IMAGE_REPO ?= quay.io/multicloudlab
-IMAGE_NAME ?= go-repo-template
+IMAGE_NAME ?= hybriddeployable-operator
 
 # Github host to use for checking the source tree;
 # Override this variable ue with your own value if you're working on forked repo.
@@ -64,7 +64,7 @@ else
     $(error "This system's ARCH $(ARCH) isn't recognized/supported")
 endif
 
-all: fmt check test coverage build images
+all: fmt check test coverage build build-image
 
 ifeq (,$(wildcard go.mod))
 ifneq ("$(realpath $(DEST))", "$(realpath $(PWD))")
@@ -73,6 +73,20 @@ endif
 endif
 
 include common/Makefile.common.mk
+
+############################################################
+# install operator sdk section
+############################################################
+
+install-operator-sdk: 
+	@operator-sdk version 2> /dev/null ; if [ $$? -ne 0 ]; then ./common/scripts/install-operator-sdk.sh; fi
+
+############################################################
+# install kubebuilder section
+############################################################
+
+install-kubebuilder: 
+	@/usr/local/kubebuilder/bin/kubebuilder version 2> /dev/null ; if [ $$? -ne 0 ]; then ./common/scripts/install-kubebuilder.sh; fi
 
 ############################################################
 # work section
@@ -108,7 +122,7 @@ lint: lint-all
 # test section
 ############################################################
 
-test:
+test: install-kubebuilder
 	@echo "Running the tests for $(IMAGE_NAME) on $(LOCAL_ARCH)..."
 	@go test $(TESTARGS) ./...
 
@@ -116,7 +130,7 @@ test:
 # coverage section
 ############################################################
 
-coverage:
+coverage: install-kubebuilder
 	@common/scripts/codecov.sh $(BUILD_LOCALLY)
 
 ############################################################
@@ -125,7 +139,7 @@ coverage:
 
 build:
 	@echo "Building the $(IMAGE_NAME) binary for $(LOCAL_ARCH)..."
-	@GOARCH=$(LOCAL_ARCH) common/scripts/gobuild.sh build/_output/bin/$(IMAGE_NAME) ./cmd
+	@GOARCH=$(LOCAL_ARCH) common/scripts/gobuild.sh build/_output/bin/$(IMAGE_NAME) ./cmd/manager
 
 ############################################################
 # image section
@@ -137,9 +151,9 @@ endif
 
 build-push-image: build-image push-image
 
-build-image: build
+build-image: install-operator-sdk
 	@echo "Building the $(IMAGE_NAME) docker image for $(LOCAL_ARCH)..."
-	@docker build -t $(IMAGE_REPO)/$(IMAGE_NAME)-$(LOCAL_ARCH):$(VERSION) -f build/Dockerfile .
+	@operator-sdk build $(IMAGE_REPO)/$(IMAGE_NAME)-$(LOCAL_ARCH):$(VERSION)
 
 push-image: $(CONFIG_DOCKER_TARGET) build-image
 	@echo "Pushing the $(IMAGE_NAME) docker image for $(LOCAL_ARCH)..."
@@ -150,7 +164,7 @@ push-image: $(CONFIG_DOCKER_TARGET) build-image
 ############################################################
 
 multiarch-image: $(CONFIG_DOCKER_TARGET)
-	@common/scripts/multiarch_image.sh $(IMAGE_REPO) $(IMAGE_NAME) $(VERSION)
+	@MAX_PULLING_RETRY=20 RETRY_INTERVAL=30 common/scripts/multiarch_image.sh $(IMAGE_REPO) $(IMAGE_NAME) $(VERSION)
 
 ############################################################
 # clean section

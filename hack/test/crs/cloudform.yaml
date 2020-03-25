@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloudform
+---
+apiVersion: app.ibm.com/v1alpha1
+kind: Deployer
+metadata:
+  name: mycf
+  namespace: cloudform
+  labels:
+    deployer-type: cloudform
+  annotations:
+    "app.ibm.com/is-default-deployer": "true"
+spec:
+  type: cloudform
+  discovery:
+    gvrs:
+    - group: cloudform.ibm.com
+      version: v1alpha1
+      resource: virtualmachines

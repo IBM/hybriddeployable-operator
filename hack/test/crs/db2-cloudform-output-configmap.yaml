@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db2-config
+  namespace: cloudform
+  labels:
+    app.ibm.com/output-of: db2
+  annotations:
+    app.ibm.com/output-of: default/db2
+data:
+  database_provider: virtualmachine
+  database_name: newweb
