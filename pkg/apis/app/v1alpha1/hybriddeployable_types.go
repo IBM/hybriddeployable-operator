@@ -24,11 +24,11 @@ import (
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-const (
-	HostingHybridDeployable    = "app.ibm.com/hosting-hybriddeployable"
-	ControlledBy               = "app.ibm.com/controlled-by"
-	OutputOf                   = "app.ibm.com/output-of"
-	DependencyFrom             = "app.ibm.com/dependency-from"
+var (
+	HostingHybridDeployable    = SchemeGroupVersion.Group + "/hosting-hybriddeployable"
+	ControlledBy               = SchemeGroupVersion.Group + "controlled-by"
+	OutputOf                   = SchemeGroupVersion.Group + "output-of"
+	DependencyFrom             = SchemeGroupVersion.Group + "dependency-from"
 	HybridDeployableController = "hybriddeployable"
 	DefaultDeployerType        = "kubernetes"
 )

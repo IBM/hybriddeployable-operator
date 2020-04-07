@@ -3,7 +3,7 @@ module github.com/IBM/hybriddeployable-operator
 go 1.13
 
 require (
-	github.com/IBM/deployer-operator v0.0.0-20200325044758-68ac91c20b79
+	github.com/IBM/deployer-operator v0.0.0-20200406145902-80e6633b6f16
 	github.com/IBM/multicloud-operators-deployable v0.0.0-20191121134707-a429faaac3b4
 	github.com/IBM/multicloud-operators-placementrule v0.0.0-20191106021205-80eeda99597f
 	github.com/onsi/gomega v1.8.1

@@ -20,7 +20,7 @@ spec:
   authInfo: {}
 status: {}
 ---
-apiVersion: app.ibm.com/v1alpha1
+apiVersion: app.cp4mcm.ibm.com/v1alpha1
 kind: DeployerSet
 metadata:
   name: toronto

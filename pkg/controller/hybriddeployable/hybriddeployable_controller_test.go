@@ -66,7 +66,6 @@ var (
 			Name:      deployerKey.Name,
 			Namespace: deployerKey.Namespace,
 			Labels:    map[string]string{"deployer-type": deployerType},
-			// Annotations: map[string]string{"app.ibm.com/is-default-deployer": "true"},
 		},
 		Spec: deployerv1alpha1.DeployerSpec{
 			Type: deployerType,
@@ -374,6 +373,10 @@ func TestReconcileWithPlacementRule(t *testing.T) {
 		mgrStopped.Wait()
 	}()
 
+	prule := placementRule.DeepCopy()
+	g.Expect(c.Create(context.TODO(), prule)).To(Succeed())
+	defer c.Delete(context.TODO(), prule)
+
 	dplyr := deployer.DeepCopy()
 	g.Expect(c.Create(context.TODO(), dplyr)).To(Succeed())
 	defer c.Delete(context.TODO(), dplyr)
@@ -385,10 +388,6 @@ func TestReconcileWithPlacementRule(t *testing.T) {
 	clstr := cluster.DeepCopy()
 	g.Expect(c.Create(context.TODO(), clstr)).To(Succeed())
 	defer c.Delete(context.TODO(), clstr)
-
-	prule := placementRule.DeepCopy()
-	g.Expect(c.Create(context.TODO(), prule)).To(Succeed())
-	defer c.Delete(context.TODO(), prule)
 
 	//Pull back the placementrule and update the status subresource
 	pr := &placementv1alpha1.PlacementRule{}

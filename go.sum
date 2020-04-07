@@ -32,8 +32,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/GoogleCloudPlatform/k8s-cloud-provider v0.0.0-20181220005116-f8e995905100/go.mod h1:iroGtC8B3tQiqtds1l+mgk/BBOrxbqjH+eUfFQYRc14=
 github.com/GoogleCloudPlatform/k8s-cloud-provider v0.0.0-20190822182118-27a4ced34534/go.mod h1:iroGtC8B3tQiqtds1l+mgk/BBOrxbqjH+eUfFQYRc14=
-github.com/IBM/deployer-operator v0.0.0-20200325044758-68ac91c20b79 h1:N+3/1OE1m2qEAP8xWRaMm9gOzSy6uIPzv32s0r/eOSM=
-github.com/IBM/deployer-operator v0.0.0-20200325044758-68ac91c20b79/go.mod h1:ZC6KKHlotYBZgBDC/7a6KZy8idJXEvduBlYfeqEDUog=
+github.com/IBM/deployer-operator v0.0.0-20200406145902-80e6633b6f16 h1:awSZ1GGiZ0TJXdQsfQfzA2HGPq+EHFTvg/LQditjw6g=
+github.com/IBM/deployer-operator v0.0.0-20200406145902-80e6633b6f16/go.mod h1:V22gVzdnIGuQdmUBP+bVo8TVYxD/Z757E1Aw1GsNUYY=
 github.com/IBM/multicloud-operators-channel v0.0.0-20191106021206-61ab358c6b28/go.mod h1:Q+uqAWSSvG0CvyUolAzEYE+BWM3NoZi5XyenjMskl7o=
 github.com/IBM/multicloud-operators-deployable v0.0.0-20191106030805-be79868c4e0f/go.mod h1:9HTudFRHHpUxckF8X3ljVjtvLMbKJIebwLLyr5ak0+Q=
 github.com/IBM/multicloud-operators-deployable v0.0.0-20191121134707-a429faaac3b4 h1:Hc7UDy49cjAdVVADwTp4OK2sPZSopL+2uEDjZMXGS48=
@@ -506,6 +506,8 @@ github.com/kr/text v0.0.0-20130911015532-6807e777504f/go.mod h1:sjUstKUATFIcff4q
 github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
 github.com/kshvakov/clickhouse v1.3.5/go.mod h1:DMzX7FxRymoNkVgizH0DWAL8Cur7wHLgx3MUnGwJqpE=
+github.com/kubernetes-sigs/application v0.8.1 h1:tnIN+iijr0kDJxvOhnqjoXV+3hWydRNy8OHisMyO71U=
+github.com/kubernetes-sigs/application v0.8.1/go.mod h1:KqAScqo78PXUrmoFOH8z6P4xQDBdzyJH1FMqrhgJJLE=
 github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348/go.mod h1:B69LEHPfb2qLo0BaaOLcbitczOKLWTsrBG9LczfCD4k=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lib/pq v1.2.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=

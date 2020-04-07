@@ -14,5 +14,5 @@
 
 // Package v1alpha1 contains API Schema definitions for the app v1alpha1 API group
 // +k8s:deepcopy-gen=package,register
-// +groupName=app.ibm.com
+// +groupName=app.cp4mcm.ibm.com
 package v1alpha1

@@ -43,8 +43,8 @@ var (
 		Kind:    "Deployable",
 	}
 	hybriddeployableGVK = schema.GroupVersionKind{
-		Group:   "app.ibm.com",
-		Version: "v1alpha1",
+		Group:   appv1alpha1.SchemeGroupVersion.Group,
+		Version: appv1alpha1.SchemeGroupVersion.Version,
 		Kind:    "HybridDeployable",
 	}
 )
