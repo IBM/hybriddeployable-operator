@@ -239,30 +239,57 @@ func (r *ReconcileHybridDeployable) updateObjectForDeployer(templateobj *unstruc
 
 	// handle the deployable
 	if gvr == deployableGVR {
-		dpl := &dplv1alpha1.Deployable{}
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, dpl)
-
-		if err != nil {
-			klog.Error("Failed to convert deployable to unstructured with error:", err)
-			return nil, err
+		if err = unstructured.SetNestedMap(obj.Object, templateobj.Object, "spec", "template"); err != nil {
+			klog.Error("Failed to update object ", obj.GetNamespace()+"/"+obj.GetName(), " with error: ", err)
+			return obj, err
 		}
-
-		dpl.Spec.Template = &runtime.RawExtension{
-			Object: templateobj,
-		}
-		uc, err := runtime.DefaultUnstructuredConverter.ToUnstructured(dpl)
-
-		if err != nil {
-			klog.Error("Failed to convert deployable to unstructured with error:", err)
-			return nil, err
-		}
-
-		obj.SetUnstructuredContent(uc)
 	} else {
-		newobj := templateobj.DeepCopy()
-		newobj.SetNamespace(obj.GetNamespace())
-		newobj.SetAnnotations(obj.GetAnnotations())
-		newobj.SetLabels(obj.GetLabels())
+		// use the existing object as a base and copy only the labels, annotations and spec from the template object
+		newobj := obj.DeepCopy()
+
+		newLabels := obj.GetLabels()
+		if newLabels == nil {
+			newLabels = make(map[string]string)
+		}
+		for labelKey, labelValue := range templateobj.GetLabels() {
+			newLabels[labelKey] = labelValue
+		}
+		newobj.SetLabels(newLabels)
+
+		newAnnotations := obj.GetAnnotations()
+		if newAnnotations == nil {
+			newAnnotations = make(map[string]string)
+		}
+		for annotationKey, annotationValue := range templateobj.GetAnnotations() {
+			newAnnotations[annotationKey] = annotationValue
+		}
+		newobj.SetAnnotations(newAnnotations)
+
+		newspec, _, err := unstructured.NestedMap(templateobj.Object, "spec")
+		if err != nil {
+			klog.Error("Failed to retrieve object spec for ", obj.GetNamespace()+"/"+obj.GetName(), " with error: ", err)
+			return obj, err
+		}
+
+		if err = unstructured.SetNestedMap(newobj.Object, newspec, "spec"); err != nil {
+			klog.Error("Failed to update object ", obj.GetNamespace()+"/"+obj.GetName(), " with error: ", err)
+			return obj, err
+		}
+
+		// some types , like ConfigMaps, use data instead of spec
+		newdata, _, err := unstructured.NestedMap(templateobj.Object, "data")
+		if err != nil {
+			klog.Error("Failed to retrieve object spec for ", obj.GetNamespace()+"/"+obj.GetName(), " with error: ", err)
+			return obj, err
+		}
+
+		if newdata != nil {
+			if err = unstructured.SetNestedMap(newobj.Object, newdata, "data"); err != nil {
+				klog.Error("Failed to update object ", obj.GetNamespace()+"/"+obj.GetName(), " with error: ", err)
+				return obj, err
+			}
+		}
+
 		obj = newobj
 	}
 

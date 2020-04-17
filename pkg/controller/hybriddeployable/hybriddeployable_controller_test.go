@@ -16,6 +16,7 @@ package hybriddeployable
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -23,6 +24,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
@@ -32,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	deployerv1alpha1 "github.com/IBM/deployer-operator/pkg/apis/app/v1alpha1"
+	appv1alpha1 "github.com/IBM/hybriddeployable-operator/pkg/apis/app/v1alpha1"
 	hybriddeployablev1alpha1 "github.com/IBM/hybriddeployable-operator/pkg/apis/app/v1alpha1"
 
 	deployablev1alpha1 "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
@@ -140,7 +144,8 @@ var (
 
 	hybridDeployableName      = "test-hd"
 	hybridDeployableNamespace = "test-hd-ns"
-	hybridDeployableKey       = types.NamespacedName{
+
+	hybridDeployableKey = types.NamespacedName{
 		Name:      hybridDeployableName,
 		Namespace: hybridDeployableNamespace,
 	}
@@ -207,7 +212,79 @@ func TestReconcileWithDeployer(t *testing.T) {
 	g.Expect(c.Create(context.TODO(), dplyr)).To(Succeed())
 	defer c.Delete(context.TODO(), dplyr)
 
-	//Expect  payload is created in deplyer namespace on hybriddeployable create
+	//Expect  payload is created in deployer namespace on hybriddeployable create
+	instance := hybridDeployable.DeepCopy()
+	g.Expect(c.Create(context.TODO(), instance)).To(Succeed())
+	g.Eventually(requests, timeout, interval).Should(Receive(Equal(expectedRequest)))
+
+	pl := &corev1.ConfigMap{}
+	plKey := types.NamespacedName{
+		Name:      payloadFoo.Name,
+		Namespace: deployer.Namespace,
+	}
+	g.Expect(c.Get(context.TODO(), plKey, pl)).To(Succeed())
+
+	//status update reconciliation
+	g.Eventually(requests, timeout, interval).Should(Receive(Equal(expectedRequest)))
+
+	//Expect payload ro be removed on hybriddeployable delete
+	c.Delete(context.TODO(), instance)
+	g.Eventually(requests, timeout, interval).Should(Receive(Equal(expectedRequest)))
+	g.Expect(c.Get(context.TODO(), plKey, pl)).NotTo(Succeed())
+}
+
+func TestUpdateObjectChild(t *testing.T) {
+	g := NewWithT(t)
+
+	templateInHybridDeployable := hybriddeployablev1alpha1.HybridTemplate{
+		DeployerType: deployerType,
+		Template: &runtime.RawExtension{
+			Object: payloadFoo,
+		},
+	}
+
+	deployerInPlacement := corev1.ObjectReference{
+		Name:      deployerKey.Name,
+		Namespace: deployerKey.Namespace,
+	}
+
+	hybridDeployable.Spec = hybriddeployablev1alpha1.HybridDeployableSpec{
+		HybridTemplates: []hybriddeployablev1alpha1.HybridTemplate{
+			templateInHybridDeployable,
+		},
+		Placement: &hybriddeployablev1alpha1.HybridPlacement{
+			Deployers: []corev1.ObjectReference{
+				deployerInPlacement,
+			},
+		},
+	}
+
+	var c client.Client
+
+	// Setup the Manager and Controller.  Wrap the Controller Reconcile function so it writes each request to a
+	// channel when it is finished.
+	mgr, err := manager.New(cfg, manager.Options{MetricsBindAddress: "0"})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	c = mgr.GetClient()
+
+	rec := newReconciler(mgr)
+	recFn, requests := SetupTestReconcile(rec)
+
+	g.Expect(add(mgr, recFn)).To(Succeed())
+
+	stopMgr, mgrStopped := StartTestManager(mgr, g)
+
+	defer func() {
+		close(stopMgr)
+		mgrStopped.Wait()
+	}()
+
+	dplyr := deployer.DeepCopy()
+	g.Expect(c.Create(context.TODO(), dplyr)).To(Succeed())
+	defer c.Delete(context.TODO(), dplyr)
+
+	//Expect  payload is created in deployer namespace on hybriddeployable create
 	instance := hybridDeployable.DeepCopy()
 	g.Expect(c.Create(context.TODO(), instance)).To(Succeed())
 	g.Eventually(requests, timeout, interval).Should(Receive(Equal(expectedRequest)))
@@ -225,7 +302,19 @@ func TestReconcileWithDeployer(t *testing.T) {
 	//Expect payload is updated on hybriddeployable template update
 	instance = &hybriddeployablev1alpha1.HybridDeployable{}
 	g.Expect(c.Get(context.TODO(), hybridDeployableKey, instance)).To(Succeed())
-	instance.Spec.HybridTemplates[0].Template = &runtime.RawExtension{Object: payloadBar}
+
+	// update the paylod spec and labels/annotations
+	plBar := payloadBar.DeepCopy()
+	plBar.Annotations = make(map[string]string)
+	plBar.Labels = make(map[string]string)
+
+	newPayloadAnnotation := "bar_annotation"
+	newPayloadLabel := "bar_label"
+
+	plBar.Annotations[newPayloadAnnotation] = newPayloadAnnotation
+	plBar.Labels[newPayloadLabel] = newPayloadLabel
+
+	instance.Spec.HybridTemplates[0].Template = &runtime.RawExtension{Object: plBar}
 
 	g.Expect(c.Update(context.TODO(), instance)).To(Succeed())
 	g.Eventually(requests, timeout, interval).Should(Receive(Equal(expectedRequest)))
@@ -239,10 +328,122 @@ func TestReconcileWithDeployer(t *testing.T) {
 	defer c.Delete(context.TODO(), pl)
 	g.Expect(pl.Data).To(Equal(payloadBar.Data))
 
+	g.Expect(pl.Annotations[newPayloadAnnotation]).To(Equal(newPayloadAnnotation))
+	g.Expect(pl.Labels[newPayloadLabel]).To(Equal(newPayloadLabel))
+
 	//Expect payload ro be removed on hybriddeployable delete
 	c.Delete(context.TODO(), instance)
 	g.Eventually(requests, timeout, interval).Should(Receive(Equal(expectedRequest)))
 	g.Expect(c.Get(context.TODO(), plKey, pl)).NotTo(Succeed())
+}
+
+func TestUpdateDeployableChild(t *testing.T) {
+	g := NewWithT(t)
+
+	templateInHybridDeployable := hybriddeployablev1alpha1.HybridTemplate{
+		DeployerType: deployerType,
+		Template: &runtime.RawExtension{
+			Object: payloadFoo,
+		},
+	}
+
+	hybridDeployable.Spec = hybriddeployablev1alpha1.HybridDeployableSpec{
+		HybridTemplates: []hybriddeployablev1alpha1.HybridTemplate{
+			templateInHybridDeployable,
+		},
+		Placement: &hybriddeployablev1alpha1.HybridPlacement{
+			PlacementRef: &corev1.ObjectReference{
+				Name:      placementRuleName,
+				Namespace: placementRuleNamespace,
+			},
+		},
+	}
+
+	var c client.Client
+
+	// Setup the Manager and Controller.  Wrap the Controller Reconcile function so it writes each request to a
+	// channel when it is finished.
+	mgr, err := manager.New(cfg, manager.Options{MetricsBindAddress: "0"})
+	g.Expect(err).NotTo(HaveOccurred())
+
+	c = mgr.GetClient()
+
+	rec := newReconciler(mgr)
+	recFn, requests := SetupTestReconcile(rec)
+
+	g.Expect(add(mgr, recFn)).To(Succeed())
+
+	stopMgr, mgrStopped := StartTestManager(mgr, g)
+
+	defer func() {
+		close(stopMgr)
+		mgrStopped.Wait()
+	}()
+
+	prule := placementRule.DeepCopy()
+	g.Expect(c.Create(context.TODO(), prule)).To(Succeed())
+	defer c.Delete(context.TODO(), prule)
+
+	dplyr := deployer.DeepCopy()
+	g.Expect(c.Create(context.TODO(), dplyr)).To(Succeed())
+	defer c.Delete(context.TODO(), dplyr)
+
+	dset := deployerSet.DeepCopy()
+	g.Expect(c.Create(context.TODO(), dset)).To(Succeed())
+	defer c.Delete(context.TODO(), dset)
+
+	clstr := cluster.DeepCopy()
+	g.Expect(c.Create(context.TODO(), clstr)).To(Succeed())
+	defer c.Delete(context.TODO(), clstr)
+
+	//Pull back the placementrule and update the status subresource
+	pr := &placementv1alpha1.PlacementRule{}
+	g.Expect(c.Get(context.TODO(), placementRuleKey, pr)).To(Succeed())
+
+	decisionInPlacement := placementv1alpha1.PlacementDecision{
+		ClusterName:      clusterName,
+		ClusterNamespace: clusterNamespace,
+	}
+
+	newpd := []placementv1alpha1.PlacementDecision{
+		decisionInPlacement,
+	}
+	pr.Status.Decisions = newpd
+	g.Expect(c.Status().Update(context.TODO(), pr.DeepCopy())).To(Succeed())
+	defer c.Delete(context.TODO(), pr)
+
+	//Expect payload is created in deployer namespace on hybriddeployable create
+	instance := hybridDeployable.DeepCopy()
+	g.Expect(c.Create(context.TODO(), instance)).To(Succeed())
+	defer c.Delete(context.TODO(), instance)
+	g.Eventually(requests, timeout, interval).Should(Receive(Equal(expectedRequest)))
+
+	keylabel := map[string]string{
+		appv1alpha1.HostingHybridDeployable: instance.Name,
+	}
+	dpls := &deployablev1alpha1.DeployableList{}
+	g.Expect(c.List(context.TODO(), dpls, &client.ListOptions{LabelSelector: labels.SelectorFromSet(keylabel)})).To(Succeed())
+	g.Expect(dpls.Items).To(HaveLen(1))
+
+	//status update reconciliation
+	g.Eventually(requests, timeout, interval).Should(Receive(Equal(expectedRequest)))
+
+	//Expect payload is updated on hybriddeployable template update
+	instance = &hybriddeployablev1alpha1.HybridDeployable{}
+	g.Expect(c.Get(context.TODO(), hybridDeployableKey, instance)).To(Succeed())
+
+	instance.Spec.HybridTemplates[0].Template = &runtime.RawExtension{Object: payloadBar}
+
+	g.Expect(c.Update(context.TODO(), instance)).To(Succeed())
+	g.Eventually(requests, timeout, interval).Should(Receive(Equal(expectedRequest)))
+
+	updatedDpls := &deployablev1alpha1.DeployableList{}
+	g.Expect(c.List(context.TODO(), updatedDpls, &client.ListOptions{LabelSelector: labels.SelectorFromSet(keylabel)})).To(Succeed())
+	uc := &unstructured.Unstructured{}
+	json.Unmarshal(updatedDpls.Items[0].Spec.Template.Raw, uc)
+	payload, _, _ := unstructured.NestedMap(uc.Object, "data")
+	g.Expect(payload["myconfig"].(string)).To(Equal(payloadBar.Data["myconfig"]))
+
 }
 
 func TestReconcileWithDeployerLabel(t *testing.T) {
