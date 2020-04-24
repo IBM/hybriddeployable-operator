@@ -1,0 +1,18 @@
+apiVersion: app.cp4mcm.ibm.com/v1alpha1
+kind: HybridDeployable
+metadata:
+  name: simple
+  labels:
+    app.kubernetes.io/instance: hybriddeployable-operator
+    app.kubernetes.io/managed-by: hybriddeployable-operator
+    app.kubernetes.io/name: hybridApplication
+spec:
+  templates:
+  - deployerType: cloudform
+    template:
+      apiVersion: multicloud-apps.io/v1
+      kind: Subscription
+      metadata:
+        name: cloudform-sub
+        spec:
+          channel: ch-cfrepo/channel

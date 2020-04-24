@@ -1,0 +1,17 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: hybriddeployable-operator
+  labels:
+    app.kubernetes.io/instance: hybriddeployable-operator
+    app.kubernetes.io/managed-by: hybriddeployable-operator
+    app.kubernetes.io/name: hybridApplication
+rules:
+- apiGroups:
+  - "*"
+  resources:
+  - "*"
+  verbs:
+  - "*"
+
